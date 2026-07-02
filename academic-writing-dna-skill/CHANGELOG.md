@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-02
+
+### Added
+- Added `agents/openai.yaml` for Codex skill UI metadata.
+- Added PDF and DOCX text extraction support to `scripts/quantify.py`.
+- Added tests for PDF/DOCX extraction and four-format file discovery (28 tests total).
+
+### Changed
+- Updated Codex installation instructions to install the full skill folder under `~/.codex/skills/academic-writing-dna-skill/`.
+- Kept `codex/prompt.md` as a legacy prompt-only fallback instead of the primary install path.
+- Moved the Chinese workflow from a second `*.skill.md` entry to `references/zh-workflow.md` to avoid duplicate skill entry drift.
+- Reworded shared instructions from Claude-specific phrasing to neutral agent wording where appropriate.
+
 ## [0.4.0] - 2026-06-30
 
 ### Added
@@ -59,9 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Style-call template + 8-point quality checklist
 - Architecture: 7-layer distillation (L0-L6) + 2 cross-layer axes
 
-[Unreleased]: https://github.com/<user>/academic-writing-dna-skill/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/<user>/academic-writing-dna-skill/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/<user>/academic-writing-dna-skill/compare/v0.2.1...v0.3.0
-[0.2.1]: https://github.com/<user>/academic-writing-dna-skill/compare/v0.2.0...v0.2.1
-[0.2.0]: https://github.com/<user>/academic-writing-dna-skill/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/<user>/academic-writing-dna-skill/releases/tag/v0.1.0
+[Unreleased]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/yisyeasy-crypto/academic-writing-dna-skill/releases/tag/v0.1.0
