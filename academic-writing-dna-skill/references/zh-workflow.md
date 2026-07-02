@@ -4,10 +4,10 @@
 
 **支持的 CLI**：
 - **Claude Code** — 安装到 `~/.claude/skills/`，用 `/academic-writing-dna-skill` 调用
-- **Codex CLI** — 安装到 `~/.codex/prompts/`，用 `/academic-writing-dna` 调用（用 `codex/prompt.md`）
+- **Codex** — 安装完整 skill 文件夹到 `~/.codex/skills/academic-writing-dna-skill/`，用 `$academic-writing-dna-skill` 调用
 
 两种模式：**蒸馏** 和 **写作**。
-3 个工作组件：(1) Claude/Codex 读文件 + 推理；(2) scripts/quantify.py 算精确数字；(3) docs/ 提供 4 份参考。
+3 个工作组件：(1) AI agent 读文件 + 推理；(2) scripts/quantify.py 算精确数字；(3) docs/ 提供 4 份参考。
 
 ---
 
@@ -100,7 +100,8 @@ python scripts/quantify.py <文件夹>
 
 ```
 academic-writing-dna-skill/
-├── SKILL.md / 学术写作蒸馏器.skill.md    工作流（Claude 启动时读）
+├── SKILL.md                       主 skill 入口
+├── references/zh-workflow.md      中文工作流参考（不是第二个 skill 入口）
 ├── docs/                          ★ 知识库
 │   ├── cliche-blacklist.md        35 条套话
 │   ├── structure-templates.md     4 类论文子模板

@@ -4,17 +4,17 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org)
-[![Tests](https://img.shields.io/badge/tests-25%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-28%20passed-brightgreen.svg)](tests/)
 
-A Claude/Codex skill that learns an academic author's writing style from a folder of papers and lets you write new content in that style.
+A Claude Code/Codex-compatible skill that learns an academic author's writing style from a folder of papers and lets you write new content in that style.
 
 **Supported CLIs**:
 - **Claude Code** — install to `~/.claude/skills/`, invoke as `/academic-writing-dna-skill`
-- **Codex CLI** — install to `~/.codex/prompts/`, invoke as `/academic-writing-dna`
+- **Codex** — install the full folder to `~/.codex/skills/academic-writing-dna-skill/`, invoke as `$academic-writing-dna-skill`
 
 ## What it does
 
-1. **Distill** — Drop 1-10 papers (PDF, docx, md, or txt) into a folder. The skill reads them, runs an optional quantifier for precise numbers, and generates an `Academic-Writing-DNA.md` describing the author's style.
+1. **Distill** — Drop 1-10 papers (PDF, docx, md, or txt) into a folder. The skill reads them, runs an optional quantifier for precise numbers across all four formats, and generates an `Academic-Writing-DNA.md` describing the author's style.
 2. **Write** — When you ask the skill to write something, it offers to use the distilled style. You say "yes" and it writes in that style — no need to specify paper type, journal, or word count (the DNA file already knows).
 
 ## Quick start
@@ -37,17 +37,17 @@ The skill asks: "要用 [已蒸馏的] 风格吗？" — answer "用" and it wri
 ln -s /path/to/academic-writing-dna-skill ~/.claude/skills/
 ```
 
-### Codex CLI
+### Codex
 ```bash
-mkdir -p ~/.codex/prompts
-cp /path/to/academic-writing-dna-skill/codex/prompt.md ~/.codex/prompts/academic-writing-dna.md
+mkdir -p ~/.codex/skills
+cp -R /path/to/academic-writing-dna-skill ~/.codex/skills/academic-writing-dna-skill
 ```
 
-Verify by typing `/academic-writing-dna` in the CLI.
+Verify by starting Codex and asking it to use `$academic-writing-dna-skill`.
 
 ### Optional: precise numbers
 ```bash
-pip install -r requirements.txt   # jieba + pytest
+pip install -r requirements.txt   # jieba + pypdf + pytest
 ```
 The skill runs `scripts/quantify.py` automatically when Python is available.
 
@@ -55,16 +55,17 @@ The skill runs `scripts/quantify.py` automatically when Python is available.
 
 ```
 academic-writing-dna-skill/
-├── SKILL.md                       Claude Code main prompt (English)
-├── 学术写作蒸馏器.skill.md          Claude Code main prompt (中文)
-├── codex/prompt.md                Codex CLI main prompt
+├── SKILL.md                       Main skill entry
+├── agents/openai.yaml             Codex UI metadata
+├── references/zh-workflow.md      Chinese reference workflow
+├── codex/prompt.md                Legacy prompt-only fallback
 ├── docs/                          Curated knowledge
 │   ├── cliche-blacklist.md        35 academic cliches to avoid
 │   ├── structure-templates.md     4 paper-type sub-templates
 │   ├── output-template.md         Standard structure for the DNA file
 │   ├── quality-checklist.md       8-point self-check
 │   └── quantify-interpretation.md How to read quantify_report.json
-├── scripts/quantify.py            Optional precise quantifier
+├── scripts/quantify.py            Optional precise quantifier for md/txt/pdf/docx
 ├── examples/                      Input/output samples
 ├── tests/                         pytest tests (25 tests)
 ├── README.md                      This file
@@ -87,7 +88,7 @@ The skill is intentionally compact: 5 categories (workflow, knowledge, tools, sa
 ## Requirements
 
 - Python 3.10+ (only for the optional quantifier)
-- Claude Code or Codex CLI
+- Claude Code or Codex
 
 ## Documentation
 

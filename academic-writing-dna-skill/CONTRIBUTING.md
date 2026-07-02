@@ -25,7 +25,7 @@ Open an [issue](../../issues) with:
 
 ### Improve documentation
 
-Docs are in `SKILL.md`, `学术写作蒸馏器.skill.md`, `README.md`, `DELIVERY.md`, and `docs/`. Fixes to typos, unclear wording, or missing examples are very welcome.
+Docs are in `SKILL.md`, `references/zh-workflow.md`, `README.md`, `DELIVERY.md`, and `docs/`. Fixes to typos, unclear wording, or missing examples are very welcome.
 
 ### Add to the cliche blacklist
 

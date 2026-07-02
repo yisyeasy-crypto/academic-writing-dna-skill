@@ -1,6 +1,6 @@
 ---
 name: academic-writing-dna-skill
-description: Distill academic writing style from a folder of papers (PDF, docx, md, txt), then write in that style. Works in Claude Code AND Codex CLI. Uses both reading and an optional Python script for precise numbers. Produces a single Academic-Writing-DNA.md.
+description: Distill academic writing style from a folder of papers (PDF, docx, md, txt), then write in that style. Use when the user asks to distill, learn, imitate, or apply an academic author's, lab's, or journal's writing style. Works in Claude Code and Codex as a full skill folder. Produces a single Academic-Writing-DNA.md.
 ---
 
 # Academic Writing DNA
@@ -9,11 +9,11 @@ Distill a writing style from a folder of papers. Then write new content in that 
 
 **Supported CLIs**:
 - **Claude Code** — installs to `~/.claude/skills/`, invoked as `/academic-writing-dna-skill`
-- **Codex CLI** — installs to `~/.codex/prompts/`, invoked as `/academic-writing-dna` (uses `codex/prompt.md`)
+- **Codex** — installs as the full folder at `~/.codex/skills/academic-writing-dna-skill/`, invoked as `$academic-writing-dna-skill`
 
 The skill has **two modes** (Distill, Write) and **3 working components**:
-1. **You (Claude)** — read files, infer style, write output
-2. **scripts/quantify.py** — precise numbers (word counts, sentence length, citation density, etc.)
+1. **The agent** — read files, infer style, write output
+2. **scripts/quantify.py** — precise numbers (word counts, sentence length, citation density, etc.; supports `.md`, `.txt`, `.pdf`, `.docx`)
 3. **docs/** — curated references (cliche blacklist, 4 paper-type structure templates, quality checklist)
 
 ---
@@ -25,7 +25,7 @@ User says: "蒸馏 [folder] 的写作风格" / "distill the style of [folder]" /
 ### Step 1: List and read files
 
 1. List the folder with Bash. Identify all readable files. Accept `.pdf`, `.docx`, `.md`, `.txt`.
-2. Read every file using the Read tool — handles PDF and docx natively.
+2. Read every file using available file-reading tools. For precise quantification, `scripts/quantify.py` can extract text from `.md`, `.txt`, `.pdf`, and `.docx`.
 3. For each file, note: paper type (IMRAD / review / thesis / conference), language (en/zh/mixed), approximate word count, venue, year, ref count, figure count.
 
 If the folder has 0 readable files, refuse and ask user to add some.
@@ -51,6 +51,7 @@ Read these to inform the distillation (this is the curated knowledge that makes 
 - `docs/cliche-blacklist.md` — 35 academic cliches to flag and avoid in L1
 - `docs/structure-templates.md` — 4 paper-type sub-templates for L2 (IMRAD, review, thesis, conference)
 - `docs/quality-checklist.md` — 8-point self-check for after distillation
+- `docs/quantify-interpretation.md` — how to interpret quantify_report.json fields
 
 ### Step 4: Distill 7 layers
 
@@ -148,9 +149,9 @@ If yes, compare the draft against the DNA's L1 (cliches), L2 (structure), L5 (ar
 ```
 academic-writing-dna-skill/
 ├── SKILL.md                       ← you are here. The workflow. (Claude Code)
-├── 学术写作蒸馏器.skill.md          ← Chinese version (Claude Code)
+├── references/zh-workflow.md       ← Chinese reference workflow (not a second skill entry)
 ├── codex/
-│   └── prompt.md                  ← Codex CLI version (install at ~/.codex/prompts/)
+│   └── prompt.md                  ← Legacy prompt-only fallback; prefer full skill install
 ├── docs/
 │   ├── cliche-blacklist.md        ← 35 academic cliches (curated knowledge)
 │   ├── structure-templates.md     ← 4 paper-type sub-templates (curated knowledge)

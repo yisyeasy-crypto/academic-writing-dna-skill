@@ -1,5 +1,6 @@
 # Optional dependencies
 # Only needed for the optional scripts/quantify.py helper.
-# The main skill (Claude-based distillation) does NOT require any of these.
+# The main skill workflow does NOT require any of these.
 jieba==0.42.1
+pypdf==4.3.1
 pytest==7.4.3

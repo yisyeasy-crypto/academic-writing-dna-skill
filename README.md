@@ -12,7 +12,7 @@
 
 | 类型 | 文件 | 作用 |
 | - | - | - |
-| 工作流 | `SKILL.md` / `学术写作蒸馏器.skill.md` | Claude 启动 skill 时按这个操作 |
+| 工作流 | `SKILL.md` | AI agent 启动 skill 时按这个操作 |
 | 知识库 | `docs/` (4 份) | 套话黑名单、结构模板、质量清单、量化解读 |
 | 工具 | `scripts/quantify.py` | 精确量化（句长、引文密度等） |
 | 参考 | `examples/` | 输入输出示例 |
@@ -26,7 +26,7 @@
 
 **支持的 CLI**：
 - **Claude Code**（用 `SKILL.md`，命令 `/academic-writing-dna-skill`）
-- **Codex CLI**（用 `codex/prompt.md`，命令 `/academic-writing-dna`）
+- **Codex**（安装完整 skill 文件夹到 `~/.codex/skills/academic-writing-dna-skill/`，通过 `$academic-writing-dna-skill` 调用）
 
 ### 安装到 Claude Code
 
@@ -47,24 +47,24 @@ New-Item -ItemType SymbolicLink `
 
 **验证**：在 Claude Code 里输入 `/academic-writing-dna-skill`，如果出现 skill 说明就是装好了。
 
-### 安装到 Codex CLI
+### 安装到 Codex
 
-把 `codex/prompt.md` 复制到 `~/.codex/prompts/academic-writing-dna.md`：
+把整个 `academic-writing-dna-skill/` 文件夹复制到 `~/.codex/skills/academic-writing-dna-skill/`：
 
 ```bash
 # Linux / macOS
-mkdir -p ~/.codex/prompts
-cp /path/to/academic-writing-dna-skill/codex/prompt.md ~/.codex/prompts/academic-writing-dna.md
+mkdir -p ~/.codex/skills
+cp -R /path/to/academic-writing-dna-skill ~/.codex/skills/academic-writing-dna-skill
 
 # Windows (PowerShell)
-$dest = "$env:USERPROFILE\.codex\prompts\academic-writing-dna.md"
-New-Item -ItemType File -Path $dest -Force
-Copy-Item "C:\path\to\academic-writing-dna-skill\codex\prompt.md" $dest
+$dest = "$env:USERPROFILE\.codex\skills\academic-writing-dna-skill"
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex\skills"
+Copy-Item "C:\path\to\academic-writing-dna-skill" $dest -Recurse -Force
 ```
 
-**重要**：Codex prompt 引用 `docs/` 和 `scripts/`，所以也要确保 `academic-writing-dna-skill/` 文件夹**留在原位**。prompt 文件只是入口。
+**重要**：Codex 也需要完整 skill 文件夹。只复制 `codex/prompt.md` 会丢失 `docs/`、`scripts/` 和 `agents/openai.yaml`。
 
-**验证**：在 Codex CLI 里输入 `/academic-writing-dna`，如果 prompt 加载就是装好了。
+**验证**：在 Codex 里说 `Use $academic-writing-dna-skill to distill this folder`，如果 skill 被触发就是装好了。
 
 ---
 
@@ -77,12 +77,12 @@ Copy-Item "C:\path\to\academic-writing-dna-skill\codex\prompt.md" $dest
    ```
    蒸馏 ~/papers/smith-lab/ 这个文件夹的写作风格
    ```
-3. Claude 会：
+3. AI 会：
    - 读所有文件
-   - 自动跑 `scripts/quantify.py`（需要 Python + jieba）获取精确数字
+   - 自动跑 `scripts/quantify.py`（需要 Python；`pypdf` 用于更稳的 PDF 提取，`jieba` 用于中文分词）获取精确数字
    - 读 `docs/cliche-blacklist.md` 和 `docs/structure-templates.md`
    - 生成 `~/papers/smith-lab/Academic-Writing-DNA.md`
-4. 完成后 Claude 报"已蒸馏 N 篇"，并通过 8 项质量自检
+4. 完成后 AI 报"已蒸馏 N 篇"，并通过 8 项质量自检
 
 ### 用风格写新内容
 
@@ -92,11 +92,11 @@ Copy-Item "C:\path\to\academic-writing-dna-skill\codex\prompt.md" $dest
 帮我写一段关于 [你的研究主题] 的内容
 ```
 
-Claude 找到你已有的 DNA 文件，会问：
+AI 找到你已有的 DNA 文件，会问：
 
 > "我注意到你有一个 Smith Lab 的写作风格 DNA，要用这个风格写吗？"
 
-你说"用"或"好"，Claude 就按 DNA 里的 L0-L6 规则写。
+你说"用"或"好"，AI 就按 DNA 里的 L0-L6 规则写。
 
 你**不需要**告诉 Claude：
 - 写哪种论文（DNA 里 L2 有 4 个子模板）
@@ -115,15 +115,16 @@ DNA 文件就是规范。
 
 ```
 academic-writing-dna-skill/
-├── SKILL.md                       Claude Code 主提示词 (English)
-├── 学术写作蒸馏器.skill.md          Claude Code 主提示词 (中文)
+├── SKILL.md                       主 skill 入口
+├── agents/openai.yaml             Codex UI 元数据
+├── references/zh-workflow.md      中文工作流参考（不是第二个 skill 入口）
 ├── codex/
-│   └── prompt.md                  ★ Codex CLI 主提示词
+│   └── prompt.md                  旧版 prompt-only 兼容入口，优先使用完整 skill 安装
 ├── README.md                      项目简介
 ├── DELIVERY.md                    ← 本文件
 ├── LICENSE                        MIT
 │
-├── docs/                          ★ 知识库（Claude/Codex 蒸馏时读）
+├── docs/                          ★ 知识库（AI agent 蒸馏时读）
 │   ├── cliche-blacklist.md        35 条中英学术套话
 │   ├── structure-templates.md     4 类论文子模板（IMRAD/综述/学位论文/会议）
 │   ├── output-template.md         Academic-Writing-DNA.md 的标准结构
@@ -145,7 +146,7 @@ academic-writing-dna-skill/
 
 ### 如果只想用基础功能
 
-最低要求：**SKILL.md + 1 个 SKILL 文件 + scripts/ + docs/**。没有这些，skill 不完整。
+最低要求：**SKILL.md + docs/ + scripts/ + agents/openai.yaml**。没有这些，skill 不完整。
 
 ### 如果 Python 不可用
 
@@ -163,6 +164,7 @@ pip install -r requirements.txt
 
 依赖说明：
 - `jieba` — 中文分词，quantify.py 用
+- `pypdf` — PDF 文本提取，quantify.py 用
 - `pytest` — 运行 tests/ 用
 
 如果只想用 quantify.py 的基础功能（英文量化），不装 jieba 也能跑：脚本自动跳过中文处理。

@@ -1,6 +1,6 @@
 # 质量自检清单 / Quality Checklist (8 项)
 
-> 蒸馏完成后，Claude 应对照这份清单逐项打勾。
+> 蒸馏完成后，agent 应对照这份清单逐项打勾。
 > 不合格的需要修订 Academic-Writing-DNA.md，不要交付给用户。
 
 ```text

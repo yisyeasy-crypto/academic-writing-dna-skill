@@ -1,10 +1,10 @@
 # Academic Writing DNA (Codex Prompt)
 
-> Codex CLI version of academic-writing-dna-skill.
-> Install at: `~/.codex/prompts/academic-writing-dna.md`
-> Invoke with: `/academic-writing-dna`
+> Legacy prompt-only fallback for academic-writing-dna-skill.
+> Prefer installing the full skill folder at `~/.codex/skills/academic-writing-dna-skill/`
+> and invoking `$academic-writing-dna-skill`.
 
-This prompt is the entry point. The supporting files (docs/, scripts/) live in the same package directory. When this prompt references `docs/...` or `scripts/...`, treat them as relative to where this prompt is installed.
+This file is kept for older prompt workflows. If used directly, keep it inside the package folder so `docs/...` and `scripts/...` resolve from the package root.
 
 ---
 
@@ -12,7 +12,7 @@ This prompt is the entry point. The supporting files (docs/, scripts/) live in t
 
 Distill a writing style from a folder of papers. Then write new content in that style.
 
-Two modes: **Distill** and **Write**. Three working components: (1) you (Codex/Claude), (2) the `scripts/quantify.py` helper for precise numbers, (3) the `docs/` folder for curated knowledge.
+Two modes: **Distill** and **Write**. Three working components: (1) the agent, (2) the `scripts/quantify.py` helper for precise numbers, (3) the `docs/` folder for curated knowledge.
 
 ---
 

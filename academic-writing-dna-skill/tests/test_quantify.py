@@ -10,6 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from scripts.quantify import (
     load_text,
+    collect_paper_files,
     detect_lang,
     split_sentences,
     count_words_en,
@@ -22,10 +23,81 @@ from scripts.quantify import (
 )
 
 
+def write_minimal_docx(path: Path, paragraphs: list[str]) -> None:
+    import zipfile
+
+    body = "".join(f"<w:p><w:r><w:t>{text}</w:t></w:r></w:p>" for text in paragraphs)
+    document_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        f"<w:body>{body}</w:body>"
+        "</w:document>"
+    )
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr(
+            "[Content_Types].xml",
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            "</Types>",
+        )
+        zf.writestr("word/document.xml", document_xml)
+
+
+def write_minimal_pdf(path: Path, text: str) -> None:
+    escaped = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    objects = [
+        b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+        b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+        b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n",
+        f"4 0 obj\n<< /Length {len(escaped) + 37} >>\nstream\nBT /F1 12 Tf 72 72 Td ({escaped}) Tj ET\nendstream\nendobj\n".encode("latin-1"),
+        b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    ]
+    chunks = [b"%PDF-1.4\n"]
+    offsets = []
+    for obj in objects:
+        offsets.append(sum(len(c) for c in chunks))
+        chunks.append(obj)
+    xref_start = sum(len(c) for c in chunks)
+    xref = [b"xref\n0 6\n0000000000 65535 f \n"]
+    xref.extend(f"{offset:010d} 00000 n \n".encode("ascii") for offset in offsets)
+    chunks.extend(xref)
+    chunks.append(f"trailer\n<< /Root 1 0 R /Size 6 >>\nstartxref\n{xref_start}\n%%EOF\n".encode("ascii"))
+    path.write_bytes(b"".join(chunks))
+
+
 def test_load_text_strips_bom(tmp_path):
     p = tmp_path / "a.md"
     p.write_bytes(b"\xef\xbb\xbfhello")
     assert load_text(p) == "hello"
+
+
+def test_collect_paper_files_includes_pdf_and_docx(tmp_path):
+    for name in ["a.md", "b.txt", "c.pdf", "d.docx", "ignore.png"]:
+        (tmp_path / name).write_text("x", encoding="utf-8")
+
+    files = [p.name for p in collect_paper_files(tmp_path)]
+
+    assert files == ["a.md", "b.txt", "c.pdf", "d.docx"]
+
+
+def test_load_text_reads_docx(tmp_path):
+    p = tmp_path / "paper.docx"
+    write_minimal_docx(p, ["This is the abstract.", "This is the conclusion."])
+
+    text = load_text(p)
+
+    assert "This is the abstract." in text
+    assert "This is the conclusion." in text
+
+
+def test_load_text_reads_simple_pdf(tmp_path):
+    p = tmp_path / "paper.pdf"
+    write_minimal_pdf(p, "This PDF sentence was extracted.")
+
+    text = load_text(p)
+
+    assert "This PDF sentence was extracted." in text
 
 
 def test_detect_lang_pure_english():
@@ -221,7 +293,7 @@ def test_skill_md_says_quantify_runs_by_default():
 
 
 def test_codex_prompt_exists():
-    """Codex CLI 支持: codex/prompt.md 必须存在."""
+    """Codex legacy prompt fallback exists."""
     p = Path(__file__).parent.parent / "codex" / "prompt.md"
     assert p.exists(), "Missing codex/prompt.md — needed for Codex CLI support"
     content = p.read_text(encoding="utf-8")
@@ -230,18 +302,20 @@ def test_codex_prompt_exists():
         assert layer in content, f"codex/prompt.md missing layer {layer}"
     # 必须包含两个模式
     assert "Mode 1" in content and "Mode 2" in content
-    # 必须提及 Codex 安装路径
-    assert "~/.codex/prompts" in content or ".codex/prompts" in content
+    assert "~/.codex/skills" in content or ".codex/skills" in content
 
 
 def test_skill_md_mentions_codex():
     """SKILL.md 应该声明同时支持 Claude Code 和 Codex CLI."""
     skill = (Path(__file__).parent.parent / "SKILL.md").read_text(encoding="utf-8")
     assert "Codex" in skill
-    assert "~/.codex/prompts" in skill or "codex" in skill.lower()
+    assert "~/.codex/skills" in skill or "codex" in skill.lower()
 
 
-def test_chinese_skill_md_mentions_codex():
-    """中文版 skill 也应该声明 Codex 支持."""
-    skill_cn = (Path(__file__).parent.parent / "学术写作蒸馏器.skill.md").read_text(encoding="utf-8")
-    assert "Codex" in skill_cn or "codex" in skill_cn
+def test_chinese_workflow_is_reference_not_second_skill():
+    """Chinese workflow should be a reference file, not a second skill entry."""
+    repo = Path(__file__).parent.parent
+    assert not list(repo.glob("*.skill.md"))
+    workflow = repo / "references" / "zh-workflow.md"
+    assert workflow.exists()
+    assert "Codex" in workflow.read_text(encoding="utf-8")

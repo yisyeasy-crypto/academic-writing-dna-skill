@@ -1,0 +1,6 @@
+interface:
+  display_name: "Academic Writing DNA"
+  short_description: "Distill academic writing style from papers, then draft in that style."
+  default_prompt: "Use $academic-writing-dna-skill to distill the writing style from a folder of academic papers."
+policy:
+  allow_implicit_invocation: true

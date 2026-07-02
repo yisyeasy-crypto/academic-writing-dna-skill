@@ -1,7 +1,7 @@
 """quantify.py — 学术论文语料的轻量量化分析
 
-academic-writing-dna-skill v0.2.x 的可选辅助脚本。
-主流程（Claude 直接读 PDF/docx）不需要此脚本；只有需要精确数字时才跑。
+academic-writing-dna-skill optional quantification helper.
+Use this when precise corpus numbers are useful for the style DNA.
 
 Usage:
     python scripts/quantify.py <folder>
@@ -11,15 +11,17 @@ Usage:
 Output:
     <folder>/quantify_report.json
 
-支持文件: .md, .txt
-依赖: 仅 Python 3.10+ 标准库；可选 jieba 用于中文分词
+支持文件: .md, .txt, .pdf, .docx
+依赖: 标准库支持 .md/.txt/.docx 和简单 PDF；可选 pypdf 用于更稳的 PDF 提取；可选 jieba 用于中文分词
 """
 import argparse
 import json
 import re
 import sys
+import zipfile
 from collections import Counter
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 # === 文本处理 ===
 
@@ -49,8 +51,81 @@ _KNOWN_VENUES = [
     "Bioinformatics", "NAR", "BMC", "PLoS", "Nat Commun",
 ]
 
+SUPPORTED_EXTENSIONS = (".md", ".txt", ".pdf", ".docx")
+
+
+def collect_paper_files(folder: Path) -> list[Path]:
+    return sorted(
+        [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS],
+        key=lambda p: p.name.lower(),
+    )
+
+
+def _decode_pdf_literal(value: str) -> str:
+    replacements = {
+        r"\\": "\\",
+        r"\(": "(",
+        r"\)": ")",
+        r"\n": "\n",
+        r"\r": "\r",
+        r"\t": "\t",
+        r"\b": "\b",
+        r"\f": "\f",
+    }
+    for src, dst in replacements.items():
+        value = value.replace(src, dst)
+    return value
+
+
+def _extract_pdf_text_fallback(path: Path) -> str:
+    raw = path.read_bytes().decode("latin-1", errors="ignore")
+    literals = re.findall(r"\((?:\\.|[^\\()])*\)\s*Tj", raw)
+    if not literals:
+        literals = re.findall(r"\((?:\\.|[^\\()])*\)", raw)
+    text_parts = []
+    for literal in literals:
+        inner = literal[literal.find("(") + 1:literal.rfind(")")]
+        text_parts.append(_decode_pdf_literal(inner))
+    return "\n".join(part for part in text_parts if part.strip())
+
+
+def load_pdf_text(path: Path) -> str:
+    try:
+        from pypdf import PdfReader  # type: ignore
+    except ImportError:
+        return _extract_pdf_text_fallback(path)
+
+    reader = PdfReader(str(path))
+    return "\n".join((page.extract_text() or "") for page in reader.pages)
+
+
+def load_docx_text(path: Path) -> str:
+    with zipfile.ZipFile(path) as zf:
+        document_xml = zf.read("word/document.xml")
+
+    root = ET.fromstring(document_xml)
+    paragraphs = []
+    for para in root.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"):
+        parts = []
+        for node in para.iter():
+            if node.tag == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t" and node.text:
+                parts.append(node.text)
+            elif node.tag == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}tab":
+                parts.append("\t")
+            elif node.tag == "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}br":
+                parts.append("\n")
+        if parts:
+            paragraphs.append("".join(parts))
+    return "\n".join(paragraphs)
+
 
 def load_text(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return load_pdf_text(path)
+    if suffix == ".docx":
+        return load_docx_text(path)
+
     raw = path.read_bytes()
     if raw.startswith(b"\xef\xbb\xbf"):
         raw = raw[3:]
@@ -183,7 +258,12 @@ def load_cliche_blacklist(repo_root: Path) -> list[str]:
 
 
 def analyze_paper(path: Path, cliches: list[str], use_jieba: bool) -> dict:
-    text = load_text(path)
+    extraction_error = None
+    try:
+        text = load_text(path)
+    except Exception as exc:
+        text = ""
+        extraction_error = str(exc)
     lang = detect_lang(text)
     if lang == "en":
         wc = count_words_en(text)
@@ -191,6 +271,8 @@ def analyze_paper(path: Path, cliches: list[str], use_jieba: bool) -> dict:
         wc = count_words_zh(text)
     return {
         "filename": path.name,
+        "source_format": path.suffix.lower().lstrip("."),
+        "text_extraction_error": extraction_error,
         "language": lang,
         "word_count": wc,
         "meta": analyze_meta(text),
@@ -238,7 +320,7 @@ def aggregate(per_paper: list[dict]) -> dict:
 
 def main():
     ap = argparse.ArgumentParser(description="Quantify academic paper corpus")
-    ap.add_argument("folder", help="Folder containing .md/.txt papers")
+    ap.add_argument("folder", help="Folder containing .md/.txt/.pdf/.docx papers")
     ap.add_argument("--output", help="Output JSON path (default: <folder>/quantify_report.json)")
     ap.add_argument("--no-jieba", action="store_true", help="Skip Chinese tokenization (no extra deps)")
     args = ap.parse_args()
@@ -248,9 +330,9 @@ def main():
         print(f"ERROR: {folder} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    files = sorted(list(folder.glob("*.md")) + list(folder.glob("*.txt")))
+    files = collect_paper_files(folder)
     if not files:
-        print(f"ERROR: no .md/.txt files in {folder}", file=sys.stderr)
+        print(f"ERROR: no .md/.txt/.pdf/.docx files in {folder}", file=sys.stderr)
         sys.exit(1)
 
     # jieba 是可选的（不强制安装）
